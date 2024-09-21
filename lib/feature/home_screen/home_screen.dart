@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Screen'),
+        actions: [
+          Row(
+            children: [
+              Text(
+                widget.user.email!,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(width: 5),
+              //
+              ElevatedButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                },
+                child: const Icon(Icons.logout),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -24,22 +46,28 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  widget.user.email!,
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w500),
-                ),
-
-                const SizedBox(height: 50),
-                //
-                ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
+                StreamBuilder(
+                  stream: FirebaseFirestore.instance.collection('users').snapshots(),
+                  builder: (context, snapshot) {
+                    if(snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if(snapshot.hasError) {
+                      return Center(child: Text('Error : ${snapshot.error}'));
+                    } else {
+                      final List<DocumentSnapshot> documents = snapshot.data!.docs;
+                      return ListView.builder(
+                        itemCount: documents.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            child: ListTile(
+                              onTap: () {},
+                              title: Text(documents[index]['email']),
+                            ),
+                          );
+                        },
+                      );
+                    }
                   },
-                  child: const Text(
-                    'Sign Out',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                  ),
                 ),
               ],
             ),
